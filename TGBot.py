@@ -1,17 +1,16 @@
 #!/usr/bin/python
 # -*- coding: cp1251  -*-
-from re import T
 from PreProcessPhoto import PreProcessPhoto
 import telebot;
 from telebot import types
 import cv2;
 import threading 
 import os 
-bot = telebot.TeleBot('6817178987:AAGbWfjbW9_GDZxSmQO-oloJPrj6_yHQxzM');
 
+bot = telebot.TeleBot('6817178987:AAGbWfjbW9_GDZxSmQO-oloJPrj6_yHQxzM');
+PreProcess = False
 @bot.message_handler(content_types=['text'])  
 def get_text_messages(message):
-    PreProcess = False
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("Обрезка фото")
     btn2 = types.KeyboardButton("Распознавание текста")
@@ -27,8 +26,9 @@ def get_text_messages(message):
         
 @bot.message_handler(content_types=['photo'])
 def photo(message):
-    ph = threading.Thread(target = Work, args = (message,)) # Для реализации многопоточности 2 метода.
-    ph.start()
+    if PreProcess == True:
+        ph = threading.Thread(target = Work, args = (message,)) # Для реализации многопоточности 2 метода.
+        ph.start()
 def Work(message):
     fileID = message.photo[-1].file_id   
     file_info = bot.get_file(fileID)
