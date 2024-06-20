@@ -1,3 +1,6 @@
 opencv-python
 matplotlib
 pytelegrambotapi
+SpeechRecognition
+pysoundfile
+easyocr
