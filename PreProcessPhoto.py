@@ -30,28 +30,53 @@ class PreProcessPhotov2():
     def Work(pathorimage):
         image = PreProcessPhotov2.OpenImage(pathorimage) # Открытие изображения.
         
-        # binary = PreProcessPhotov2.RGB(image)
-        # approx = PreProcessPhotov2.FindApprox(binary)
+        binary1 = PreProcessPhotov2.RGB(image)
+        # approx = PreProcessPhotov2.FindApprox(binary1)
         # value  = PreProcessPhotov2.ApproxImage(image, approx)
         
-        binary = PreProcessPhotov2.HLS(image) # HLS - по "светлоте фото"
-        approx = PreProcessPhotov2.FindApprox(binary)
-        HLS = PreProcessPhotov2.ApproxImage(image, approx)
+        binary2 = PreProcessPhotov2.HLS(image) # HLS - по "светлоте фото"
+        # approx = PreProcessPhotov2.FindApprox(binary2)
+        # HLS = PreProcessPhotov2.ApproxImage(image, approx)
         
-        # binary = PreProcessPhotov2.HSV(image) # HSV - по "значению цвета"
-        # approx = PreProcessPhotov2.FindApprox(binary)
+        binary3 = PreProcessPhotov2.HSV(image) # HSV - по "значению цвета"
+        # approx = PreProcessPhotov2.FindApprox(binary3)
         # HSV = PreProcessPhotov2.ApproxImage(image, approx)
         
-        # binary = PreProcessPhotov2.gray(image) # Без обработки
-        # approx = PreProcessPhotov2.FindApprox(binary)
+        binary4 = PreProcessPhotov2.gray(image) # Без обработки
+        # approx = PreProcessPhotov2.FindApprox(binary4)
         # gray = PreProcessPhotov2.ApproxImage(image, approx)
-        return [HLS]
-        return [value, HLS, HSV , gray]
+        binaryall = np.copy(binary1)
+        for item in range(len(binary1)):
+            for pixel in range(len(binary1[item])):
+                binaryall[item][pixel]=0
+                summ = int(int(binary2[item][pixel][1])+int(binary3[item][pixel][2])+int(binary4[item][pixel]))
+                if summ >= 400:
+                    binaryall[item][pixel]=255
+                else:
+                    binaryall[item][pixel]=0
+        Otladka.ShowImages([binary1,binary2,binary3,binary4, binaryall])
+        approx = PreProcessPhotov2.FindApprox(binaryall)
+        gray = PreProcessPhotov2.ApproxImage(image, approx)
+        if gray is None:
+            for item in range(len(binary1)):
+                for pixel in range(len(binary1[item])):
+                    binaryall[item][pixel]=0
+                    summ = int(int(binary2[item][pixel])+int(binary3[item][pixel])+int(binary4[item][pixel]))
+                    if summ >= 255:
+                        binaryall[item][pixel]=255
+                    else:
+                        binaryall[item][pixel]=0
+        approx = PreProcessPhotov2.FindApprox(binaryall)
+        gray = PreProcessPhotov2.ApproxImage(image, approx)
+        return [binary1, binary2, binary3,  binary4, binaryall, gray]
+        # return [value, HLS, HSV , gray]
     def RGB(image):
         copy = np.copy(image)
+        copy = cv2.normalize(copy,  None, 200, 0, cv2.NORM_INF)
+        cp = np.copy(copy)
         for item in copy:
             for pixel in item:
-                if pixel[0] > 175 and pixel[1] > 175 and pixel[2] > 175:
+                if pixel[0] > 100 and pixel[1] > 100 and pixel[2] > 100:
                     pixel[0] = 255
                     pixel[1] = 255
                     pixel[2] = 255                  
@@ -61,61 +86,24 @@ class PreProcessPhotov2():
                     pixel[1] = 0
         newgray = cv2.cvtColor(copy, cv2.COLOR_BGR2GRAY)
         _, binary = cv2.threshold(newgray, 200, 255, cv2.THRESH_BINARY)
-        Otladka.ShowImages([binary])
+        # Otladka.ShowImages([cp,copy, newgray,binary])
         return binary
     def HLS(image):
         copy = np.copy(image)
         # gray = cv2.cvtColor(copy, cv2.COLOR_BGR2GRAY)
         newgray = cv2.normalize(copy,  None, 150, 255, cv2.NORM_INF)
-        Otladka.ShowImages([newgray])
+        # Otladka.ShowImages([newgray])
         # normalized_color_image = cv2.cvtColor(newgray, cv2.COLOR_GRAY2BGR)
-        for y in range(newgray.shape[0]):
-            for x in range(newgray.shape[1]):
-                for c in range(newgray.shape[2]):
-                    newgray[y,x,c] = np.clip(5*newgray[y,x,c] + 0, 0, 255)
+        # for y in range(newgray.shape[0]):
+        #     for x in range(newgray.shape[1]):
+        #         for c in range(newgray.shape[2]):
+        #             newgray[y,x,c] = np.clip(2*newgray[y,x,c] + 0, 0, 255)
         HLS = cv2.cvtColor(newgray, cv2.COLOR_RGB2HLS)
         HLS2 = cv2.cvtColor(copy, cv2.COLOR_RGB2HLS)
-        Otladka.ShowImages([image, newgray , HLS, HLS2])
-        # sredLight1= 0
-        # count = 0
-        # for item in HLS:
-        #     for pixel in item:
-        #         sredLight1= sredLight1 + pixel[1]
-        #         count = count +1
-        # sredLight1 = sredLight1 / count
-        # if sredLight1 < 50 or sredLight1>115:
-        #     return None
-        # sredLight= 0
-        # count = 0
-        # # Otladka.ShowImages([HLS])
-        # for item in HLS:
-        #     for pixel in item:
-        #         if pixel[1] > sredLight1:
-        #             pixel[0] = 255
-        #             pixel[1] = 255
-        #             pixel[2] = 255                  
-        #         else:
-        #             count =count +1 
-        #             sredLight = sredLight + pixel[1]
-        #             pixel[0] = 0
-        #             pixel[2] = 0
-        # sredLight = sredLight / count
-        # if sredLight*2 > sredLight1:
-        #     return None
-        # # Otladka.ShowImages([HLS])
-        # for item in HLS:
-        #     for pixel in item:
-        #         if pixel[1] > sredLight1 - sredLight/2.5:
-        #             pixel[0] = 255
-        #             pixel[1] = 255
-        #             pixel[2] = 255 
-        #         else: 
-        #             pixel[0] = 0
-        #             pixel[1] = 0
-        #             pixel[2] = 0
+        # Otladka.ShowImages([newgray,HLS, HLS2])
         for item in HLS:
             for pixel in item:
-                if pixel[1]  >= 150:
+                if pixel[1]  >= pixel[0]*1.5:
                     pixel[0] = 255
                     pixel[1] = 255
                     pixel[2] = 255                  
@@ -124,31 +112,33 @@ class PreProcessPhotov2():
                     pixel[2] = 0
                     pixel[1] = 0
         newgray = cv2.cvtColor(HLS, cv2.COLOR_BGR2GRAY)
-        _, binary = cv2.threshold(newgray, 200, 255, cv2.THRESH_BINARY)
-        Otladka.ShowImages([binary])
-        return binary
+        # Otladka.ShowImages([HLS, HLS2,newgray])
+        return HLS2
     def HSV(image):
         copy = np.copy(image)
         newgray = cv2.normalize(copy,  None, 100, 200, cv2.NORM_INF )
 
         HSV = cv2.cvtColor(copy, cv2.COLOR_RGB2HSV_FULL)
-        Otladka.ShowImages([newgray, HSV])
+        # Otladka.ShowImages([newgray, HSV])
         sredVal= 0
         sredSat= 0
         count = 0
         for item in HSV:
             for pixel in item:
-                sredVal= sredVal + pixel[2]
-                sredSat = sredSat + pixel[1]
+                sredVal= sredVal + int(pixel[2])
+                sredSat = sredSat + int(pixel[1])
                 count = count +1
         sredVal = sredVal / count
         sredSat = sredSat / count
-        if sredSat > 50:
-            return None
-        # Otladka.ShowImages([HSV])
+        # print(sredVal)
+        # print(sredSat)
+        # if sredSat > 50:
+        #     print(sredSat)
+        #     return None
+        cp = np.copy(HSV)
         for item in HSV:
             for pixel in item:   
-                if pixel[1] < sredSat and pixel[2] > sredVal/1.2:
+                if pixel[1] < sredSat and pixel[2] > sredVal*1.2:
                     pixel[0] = 255
                     pixel[1] = 255
                     pixel[2] = 255                  
@@ -159,19 +149,22 @@ class PreProcessPhotov2():
         # Otladka.ShowImages([HSV])
         newgray = cv2.cvtColor(HSV, cv2.COLOR_BGR2GRAY)
         _, binary = cv2.threshold(newgray, 200, 255, cv2.THRESH_BINARY)
-        # Otladka.ShowImages([binary])
-        return binary
+        # Otladka.ShowImages([cp,HSV,binary])
+        return cp
     def gray(image):
         copy = np.copy(image)
-        newgray = cv2.cvtColor(copy, cv2.COLOR_BGR2GRAY)
-        sred= 0
+        newgray = cv2.normalize(copy,  None, 150, 255, cv2.NORM_INF)
+        sred = 0
         count = 0
         for item in newgray:
             for pixel in item:
-                sred= sred + pixel
+                sred = int(sred+int(pixel[0]))
                 count = count +1
         sred = sred / count
-        _, binary = cv2.threshold(newgray, sred+sred*0.2, 255, cv2.THRESH_BINARY)
+        # print(sred)
+        newgray = cv2.cvtColor(newgray, cv2.COLOR_BGR2GRAY)
+        _, binary = cv2.threshold(newgray, sred*1.5, 255, cv2.THRESH_BINARY)
+        # Otladka.ShowImages([newgray,binary])
         return binary
     def FindApprox(binary):
         if binary is None:
@@ -230,7 +223,9 @@ class PreProcessPhotov2():
             print("approx problem")
             return None
         return PreProcessPhotov2._GetPerspectiveTransform(approx, image)
-        
+PreProcessPhotov2.Work("D:\\repos\\Photo-Processing\\example.jpg")
+PreProcessPhotov2.Work("D:\\repos\\Photo-Processing\\example2.jpg")
+# PreProcessPhotov2.Work()
         
 
 

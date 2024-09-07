@@ -53,11 +53,11 @@ def Work(message): # Работа с фото.
     downloaded_file = bot.download_file(file_info.file_path)
     with open("temp" + str(message.from_user.id) +".jpg", 'wb') as new_file:
         new_file.write(downloaded_file)
-    # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-    # for item in text:
-    #     bot.send_message(message.chat.id, text=item)
+    text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
+    for item in text:
+        bot.send_message(message.chat.id, text=item)
     photos = PreProcessPhotov2.Work("temp" + str(message.from_user.id) +".jpg")
-    if photos is None:
+    if photos is None or photos[0] is None:
         bot.send_message(message.chat.id, text="Документы не найдены")
         return
     # photos = ImageUpdate.Update(photos)
