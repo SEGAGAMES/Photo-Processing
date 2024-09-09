@@ -6,91 +6,77 @@ from telebot import types
 import cv2;
 import threading 
 import os 
-
+import asyncio
+from threading import Lock
+from telebot.async_telebot import AsyncTeleBot
 from TextReader import TextReader   #   pip install pysoundfile
 
 
 
-bot = telebot.TeleBot('6817178987:AAGbWfjbW9_GDZxSmQO-oloJPrj6_yHQxzM');
-PreProcess = True
+bot = telebot.TeleBot('6817178987:AAGbWfjbW9_GDZxSmQO-oloJPrj6_yHQxzM')
+resize_data = {}
+lock = Lock()
 @bot.message_handler(content_types=['text'])  
 def get_text_messages(message): # Работа с сообщениями
     if message.text == "Поиск документа":
         print("text with: " + str(message.from_user.id))
-        bot.send_message(message.from_user.id, "Отправьте фото для обрезки P.S. Оберзаем фото документов на фоне другого цвета..")
+        bot.send_message(message.from_user.id, "Отправьте документ для распознавания")
         img = open("example.jpg", 'rb')
+        resize_data[message.from_user.id] = True
         bot.send_photo(message.from_user.id, img, caption='Например,')
-        PreProcess = True
     elif message.text == "Распознавание текста":
         print("text with: " + str(message.from_user.id))
-        bot.send_message(message.from_user.id, "Отправьте фото для распознавания")
-        PreProcess = False
-        print()
+        bot.send_message(message.from_user.id, "Отправьте фото для распознавания (ТОЛЬКО РУССКИЙ)")
+        resize_data[message.from_user.id] = False
     else:
         print("start with: " + str(message.from_user.id))
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton("Поиск документа")
         btn2 = types.KeyboardButton("Распознавание текста")
         markup.add(btn1, btn2)
-        bot.send_message(message.chat.id, text="Выбери опцию", reply_markup=markup)
+        bot.send_message(message.chat.id, text="Выберите опцию", reply_markup=markup)
         
 @bot.message_handler(content_types=['photo'])
 def photo(message):
-    if PreProcess == True:
-        ph = threading.Thread(target = Work, args = (message,)) # Для реализации многопоточности 2 метода.
-        ph.start()
-    else:
-         bot.send_message(message.from_user.id, "еще не робит..")
-def Work(message): # Работа с фото.
+    t1 = threading.Thread(target=Work, args =(message,))
+    t1.start()
+def Work(message):
+    if message.from_user.id not in resize_data:
+        resize_data[message.from_user.id] = True
     print("photo from: " + str(message.from_user.id))
-    bot.send_message(message.chat.id, text="Обработка...")
+    (bot.send_message(message.chat.id, text="Обработка...")) 
     fileID = message.photo[-1].file_id   
     file_info = bot.get_file(fileID)
     downloaded_file = bot.download_file(file_info.file_path)
-    with open("temp" + str(message.from_user.id) +".jpg", 'wb') as new_file:
+    with open("temp" + str(message.id) +".jpg", 'wb') as new_file:
         new_file.write(downloaded_file)
-    # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-    # for item in text:
-    #     bot.send_message(message.chat.id, text=item)
-    photos = PreProcessPhotov2.Work("temp" + str(message.from_user.id) +".jpg")
+    photos = PreProcessPhotov2.Work("temp" + str(message.id) +".jpg")
     if photos is None or photos[0] is None:
         bot.send_message(message.chat.id, text="Документы не найдены")
         return
-    # photos = ImageUpdate.Update(photos)
-    if len(photos) == 1:
-        cv2.imwrite("temp" + str(message.from_user.id) +".jpg",photos[0])
-        img = open("temp" + str(message.from_user.id) +".jpg", 'rb')
-        try:
-            bot.send_photo(message.from_user.id, img)
-            # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-            # for item in text:
-            #     bot.send_message(message.chat.id, text=item)
-        except:
-            bot.send_message(message.chat.id, text="Ошибка отправки")
-            print('ошибка отправки с  ' + str(message.from_user.id))
+    elif  resize_data[message.from_user.id] == False:
+        cv2.imwrite("temp" + str(message.id) +".jpg",photos[0])
+        img = open("temp" + str(message.id) +".jpg", 'rb')
+        text = TextReader.ReadText(photos[1])
+        result = ""
+        for item in text:
+            result = result + " " + item
+        lock.acquire()
+        bot.send_photo(message.from_user.id, img)
+        bot.send_message(message.chat.id, text=result)
+        lock.release()
         img.close()
         print('Отправлено ' + str(message.from_user.id))
-        os.remove("temp" + str(message.from_user.id) +".jpg")
+        os.remove("temp" + str(message.id) +".jpg")
         return
     else:
-        for item in photos:
-            if item is None :
-                continue
-            cv2.imwrite("temp" + str(message.from_user.id) +".jpg",item)
-            img = open("temp" + str(message.from_user.id) +".jpg", 'rb')
-            try:
-                # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-                # for item in text:
-                #     bot.send_message(message.chat.id, text=item)
-                bot.send_photo(message.from_user.id, img)
-            except:
-                bot.send_message(message.chat.id, text="Ошибка отправки")
-                print('ошибка отправки с  ' + str(message.from_user.id))
-            img.close()
-            print('Отправлено ' + str(message.from_user.id))
-            os.remove("temp" + str(message.from_user.id) +".jpg")
-    return
-
+        cv2.imwrite("temp" + str(message.id) +".jpg",photos[0])
+        img = open("temp" + str(message.id) +".jpg", 'rb')
+        bot.send_photo(message.from_user.id, img)
+        img.close()
+        print('Отправлено ' + str(message.from_user.id))
+        os.remove("temp" + str(message.id) +".jpg")
+        return
 
 print("Start...")
 bot.polling(none_stop=True, interval=0)
