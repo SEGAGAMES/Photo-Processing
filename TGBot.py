@@ -1,15 +1,11 @@
 #!/usr/bin/python
 # -*- coding: cp1251  -*-
-from email.headerregistry import ContentDispositionHeader
-from ImageUpdate import ImageUpdate
 from PreProcessPhoto import PreProcessPhotov2
-from SpeechRecognizer import SpeechRecognizer
 import telebot;
 from telebot import types
 import cv2;
 import threading 
 import os 
-import soundfile as sf
 
 from TextReader import TextReader   #   pip install pysoundfile
 
@@ -53,9 +49,9 @@ def Work(message): # Работа с фото.
     downloaded_file = bot.download_file(file_info.file_path)
     with open("temp" + str(message.from_user.id) +".jpg", 'wb') as new_file:
         new_file.write(downloaded_file)
-    text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-    for item in text:
-        bot.send_message(message.chat.id, text=item)
+    # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
+    # for item in text:
+    #     bot.send_message(message.chat.id, text=item)
     photos = PreProcessPhotov2.Work("temp" + str(message.from_user.id) +".jpg")
     if photos is None or photos[0] is None:
         bot.send_message(message.chat.id, text="Документы не найдены")
@@ -66,9 +62,9 @@ def Work(message): # Работа с фото.
         img = open("temp" + str(message.from_user.id) +".jpg", 'rb')
         try:
             bot.send_photo(message.from_user.id, img)
-            text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
-            for item in text:
-                bot.send_message(message.chat.id, text=item)
+            # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
+            # for item in text:
+            #     bot.send_message(message.chat.id, text=item)
         except:
             bot.send_message(message.chat.id, text="Ошибка отправки")
             print('ошибка отправки с  ' + str(message.from_user.id))
@@ -83,7 +79,9 @@ def Work(message): # Работа с фото.
             cv2.imwrite("temp" + str(message.from_user.id) +".jpg",item)
             img = open("temp" + str(message.from_user.id) +".jpg", 'rb')
             try:
-                # bot.send_message(message.chat.id, text=TextReader.ReadText("temp" + str(message.from_user.id) +".jpg"))
+                # text = TextReader.ReadText("temp" + str(message.from_user.id) +".jpg")
+                # for item in text:
+                #     bot.send_message(message.chat.id, text=item)
                 bot.send_photo(message.from_user.id, img)
             except:
                 bot.send_message(message.chat.id, text="Ошибка отправки")
@@ -93,21 +91,7 @@ def Work(message): # Работа с фото.
             os.remove("temp" + str(message.from_user.id) +".jpg")
     return
 
-@bot.message_handler(content_types=['voice'])
-def voice_to_text(message):
 
-    file_name_full="temp"+str(message.from_user.id)+".ogg"
-    file_name_full_converted="tempready"+str(message.from_user.id)+".wav"
-    file_info = bot.get_file(message.voice.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(file_name_full, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    data, samplerate = sf.read(file_name_full)
-    sf.write(file_name_full_converted, data, samplerate)
-    text=SpeechRecognizer.recognise(file_name_full_converted)
-    bot.reply_to(message, text)
-    os.remove(file_name_full)
-    os.remove(file_name_full_converted)
 print("Start...")
 bot.polling(none_stop=True, interval=0)
 
