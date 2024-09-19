@@ -44,11 +44,11 @@ class PreProcessPhotov2():
         
         binary4 = PreProcessPhotov2.gray(closing) # Без обработки
         
-        value = 350
+        value = 300
         gray = None
         while gray is None:
             gray = PreProcessPhotov2.try_value(image,binary2,binary3,binary4, value)
-            value = value - 25
+            value = value - 50
         result = PreProcessPhotov2.hide_shadows(gray)
         return [gray,result]
     def HLS(image):

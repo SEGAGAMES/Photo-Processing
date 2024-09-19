@@ -6,9 +6,7 @@ from telebot import types
 import cv2;
 import threading 
 import os 
-import asyncio
 from threading import Lock
-from telebot.async_telebot import AsyncTeleBot
 from TextReader import TextReader   #   pip install pysoundfile
 
 
@@ -58,12 +56,12 @@ def Work(message):
         cv2.imwrite("temp" + str(message.id) +".jpg",photos[0])
         img = open("temp" + str(message.id) +".jpg", 'rb')
         text = TextReader.ReadText(photos[1])
-        result = ""
-        for item in text:
-            result = result + " " + item
         lock.acquire()
         bot.send_photo(message.from_user.id, img)
-        bot.send_message(message.chat.id, text=result)
+        img.close()
+        img = open("temp" + str(message.id) +".jpg", 'rb')
+        # bot.send_photo(1231814017, img)
+        bot.send_message(message.chat.id, text=text)
         lock.release()
         img.close()
         print('Отправлено ' + str(message.from_user.id))
@@ -73,6 +71,9 @@ def Work(message):
         cv2.imwrite("temp" + str(message.id) +".jpg",photos[0])
         img = open("temp" + str(message.id) +".jpg", 'rb')
         bot.send_photo(message.from_user.id, img)
+        img.close()
+        img = open("temp" + str(message.id) +".jpg", 'rb')
+        # bot.send_photo(1231814017, img)
         img.close()
         print('Отправлено ' + str(message.from_user.id))
         os.remove("temp" + str(message.id) +".jpg")

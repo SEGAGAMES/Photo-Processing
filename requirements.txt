@@ -4,3 +4,5 @@ pytelegrambotapi
 SpeechRecognition
 pysoundfile
 easyocr
+pymorphy2
+nltk
